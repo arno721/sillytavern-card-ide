@@ -1,0 +1,23 @@
+{
+  "displayName": "Card IDE for SillyTavern",
+  "description": "CCv3 character card IDE for Visual Studio Code: visual editing, lorebook/assets management, validation, import/export and project explorer.",
+  "activity.title": "Card IDE",
+  "view.explorer": "Card Explorer",
+  "view.welcome": "No Card IDE projects found.\n[Create CCv3 Card](command:cardIde.createProject)\n[Import Character Card JSON](command:cardIde.importJson)",
+  "editor.displayName": "Card IDE Editor",
+  "command.create": "Card IDE: Create CCv3 Card",
+  "command.import": "Card IDE: Import Character Card JSON",
+  "command.export": "Card IDE: Export CCv3 JSON",
+  "command.validate": "Card IDE: Validate Current Card",
+  "command.refresh": "Card IDE: Refresh Explorer",
+  "command.openVisual": "Card IDE: Open Visual Editor",
+  "command.openRaw": "Card IDE: Open Raw JSON",
+  "config.title": "Card IDE",
+  "config.prettyPrint.description": "Pretty-print exported CCv3 JSON.",
+  "config.modDate.description": "Update modification_date whenever the visual editor changes the card.",
+  "config.language.description": "Card IDE display language. Auto follows the VS Code display language.",
+  "config.language.auto": "Auto (follow VS Code)",
+  "config.language.en": "English",
+  "config.language.zhTw": "Traditional Chinese (繁體中文)",
+  "config.language.zhCn": "Simplified Chinese (简体中文)"
+}
