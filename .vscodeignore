@@ -1,0 +1,6 @@
+.vscode/**
+.github/**
+test/**
+node_modules/**
+*.vsix
+docs/**
