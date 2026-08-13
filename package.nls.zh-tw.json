@@ -1,0 +1,23 @@
+{
+  "displayName": "SillyTavern Card IDE",
+  "description": "Visual Studio Code 的 CCv3 角色卡 IDE：視覺化編輯、世界書與資源管理、驗證、匯入匯出及專案瀏覽器。",
+  "activity.title": "Card IDE",
+  "view.explorer": "角色卡瀏覽器",
+  "view.welcome": "找不到 Card IDE 專案。\n[建立 CCv3 角色卡](command:cardIde.createProject)\n[匯入角色卡 JSON](command:cardIde.importJson)",
+  "editor.displayName": "Card IDE 編輯器",
+  "command.create": "Card IDE：建立 CCv3 角色卡",
+  "command.import": "Card IDE：匯入角色卡 JSON",
+  "command.export": "Card IDE：匯出 CCv3 JSON",
+  "command.validate": "Card IDE：驗證目前角色卡",
+  "command.refresh": "Card IDE：重新整理瀏覽器",
+  "command.openVisual": "Card IDE：開啟視覺化編輯器",
+  "command.openRaw": "Card IDE：開啟原始 JSON",
+  "config.title": "Card IDE",
+  "config.prettyPrint.description": "以格式化排版匯出 CCv3 JSON。",
+  "config.modDate.description": "視覺化編輯器修改角色卡時自動更新 modification_date。",
+  "config.language.description": "Card IDE 顯示語言。「自動」會跟隨 VS Code 顯示語言。",
+  "config.language.auto": "自動（跟隨 VS Code）",
+  "config.language.en": "English",
+  "config.language.zhTw": "繁體中文",
+  "config.language.zhCn": "簡體中文"
+}
