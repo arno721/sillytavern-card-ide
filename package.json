@@ -1,0 +1,66 @@
+{
+  "name": "sillytavern-card-ide",
+  "displayName": "%displayName%",
+  "description": "%description%",
+  "version": "0.1.6",
+  "publisher": "local-dev",
+  "license": "MIT",
+  "engines": { "vscode": "^1.96.0" },
+  "categories": ["Other"],
+  "keywords": ["SillyTavern", "Character Card", "CCv3", "Lorebook", "AI"],
+  "main": "./src/extension.js",
+  "activationEvents": [
+    "onCustomEditor:cardIde.editor",
+    "onView:cardIde.explorer",
+    "onCommand:cardIde.createProject",
+    "onCommand:cardIde.importJson",
+    "onCommand:cardIde.exportJson",
+    "onCommand:cardIde.validate",
+    "onCommand:cardIde.openVisualEditor"
+  ],
+  "contributes": {
+    "viewsContainers": { "activitybar": [{ "id": "cardIde", "title": "%activity.title%", "icon": "media/card-ide.svg" }] },
+    "views": { "cardIde": [{ "id": "cardIde.explorer", "name": "%view.explorer%" }] },
+    "viewsWelcome": [{ "view": "cardIde.explorer", "contents": "%view.welcome%" }],
+    "customEditors": [{ "viewType": "cardIde.editor", "displayName": "%editor.displayName%", "selector": [{ "filenamePattern": "*.cardide.json" }], "priority": "default" }],
+    "commands": [
+      { "command": "cardIde.createProject", "title": "%command.create%" },
+      { "command": "cardIde.importJson", "title": "%command.import%" },
+      { "command": "cardIde.exportJson", "title": "%command.export%" },
+      { "command": "cardIde.validate", "title": "%command.validate%" },
+      { "command": "cardIde.refresh", "title": "%command.refresh%", "icon": "$(refresh)" },
+      { "command": "cardIde.openVisualEditor", "title": "%command.openVisual%" },
+      { "command": "cardIde.openRaw", "title": "%command.openRaw%" }
+    ],
+    "menus": {
+      "view/title": [
+        { "command": "cardIde.createProject", "when": "view == cardIde.explorer", "group": "navigation@1" },
+        { "command": "cardIde.refresh", "when": "view == cardIde.explorer", "group": "navigation@2" }
+      ],
+      "view/item/context": [
+        { "command": "cardIde.openVisualEditor", "when": "view == cardIde.explorer && viewItem == cardIdeCard", "group": "inline@1" },
+        { "command": "cardIde.exportJson", "when": "view == cardIde.explorer && viewItem == cardIdeCard", "group": "card@1" },
+        { "command": "cardIde.validate", "when": "view == cardIde.explorer && viewItem == cardIdeCard", "group": "card@2" }
+      ]
+    },
+    "configuration": {
+      "title": "%config.title%",
+      "properties": {
+        "cardIde.prettyPrint": { "type": "boolean", "default": true, "description": "%config.prettyPrint.description%" },
+        "cardIde.updateModificationDateOnEdit": { "type": "boolean", "default": true, "description": "%config.modDate.description%" },
+        "cardIde.language": {
+          "type": "string",
+          "default": "auto",
+          "enum": ["auto", "en", "zh-tw", "zh-cn"],
+          "enumDescriptions": ["%config.language.auto%", "%config.language.en%", "%config.language.zhTw%", "%config.language.zhCn%"],
+          "description": "%config.language.description%"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "package": "npx @vscode/vsce package --allow-missing-repository"
+  },
+  "devDependencies": { "@vscode/vsce": "^3.6.0" }
+}
