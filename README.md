@@ -1,0 +1,1 @@
+# sillytavern-card-ide
