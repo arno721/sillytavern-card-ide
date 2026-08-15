@@ -1,0 +1,50 @@
+name: Finalize v0.2.5 source
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.v025-import/READY'
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Rebuild verified source archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .v025-import/part-*.b64 > /tmp/v025.b64
+          base64 -d /tmp/v025.b64 > /tmp/v025-source.tar.gz
+          echo '89520d7a1c1b0338f8ea060f0bf59ddc2e23b2e8055632fc60ee65dbf8400044  /tmp/v025-source.tar.gz' | sha256sum -c -
+      - name: Replace source and remove staging
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf src media test docs .vscode
+          rm -f package.json package.nls.json package.nls.zh-cn.json package.nls.zh-tw.json README.md VERSION_HISTORY.md LICENSE .gitignore .vscodeignore
+          tar -xzf /tmp/v025-source.tar.gz -C .
+          rm -rf .import-parts .upload-v024 .upload-v024b .upload-v024c .upload-v024d .upload-v024z .v025-import
+          rm -f .github/workflows/v025-import.yml
+      - name: Verify release tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(node -p "require('./package.json').version")" = '0.2.5'
+          npm test
+          while IFS= read -r -d '' file; do node --check "$file" >/dev/null; done < <(find src media -type f -name '*.js' -print0)
+      - name: Commit v0.2.5
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'feat: release Card IDE v0.2.5'
+          git push origin HEAD:main
