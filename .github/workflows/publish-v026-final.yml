@@ -1,0 +1,74 @@
+name: Publish verified v0.2.6 final
+
+on:
+  push:
+    branches: [chatgpt-v026-publish]
+    paths:
+      - '.v026-upload4k/READY-final'
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout publish branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify staged chunks
+        shell: bash
+        run: |
+          set -euo pipefail
+          count=$(find .v026-upload4k -maxdepth 1 -type f -name 'part-*.b64' | wc -l)
+          echo "chunk_count=$count"
+          test "$count" -eq 43
+          cat $(find .v026-upload4k -maxdepth 1 -type f -name 'part-*.b64' | sort) > /tmp/v026.tar.xz.b64
+          bytes=$(wc -c < /tmp/v026.tar.xz.b64)
+          echo "base64_bytes=$bytes"
+          test "$bytes" -eq 170284
+          base64 -d /tmp/v026.tar.xz.b64 > /tmp/v026.tar.xz
+          echo 'ed8498387c415a91bc48c0a403860aa5702efa77a8a614526e97ab553876907d  /tmp/v026.tar.xz' | sha256sum -c -
+
+      - name: Extract and verify exact source tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/v026-src
+          mkdir -p /tmp/v026-src
+          tar -xJf /tmp/v026.tar.xz -C /tmp/v026-src
+          test "$(node -p "require('/tmp/v026-src/package.json').version")" = '0.2.6'
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          root = Path('/tmp/v026-src')
+          files = sorted((p for p in root.rglob('*') if p.is_file()), key=lambda p: p.relative_to(root).as_posix())
+          h = hashlib.sha256()
+          for p in files:
+              rel = p.relative_to(root).as_posix().encode()
+              h.update(rel + b'\0' + hashlib.sha256(p.read_bytes()).digest() + b'\n')
+          digest = h.hexdigest()
+          print(f'files={len(files)} tree_sha256={digest}')
+          assert len(files) == 119, f'unexpected file count: {len(files)}'
+          assert digest == '8c60041e9b71ef6ca30355c06e6f0147b9f02e93e86fb8821b0ee299a3eb1736', digest
+          PY
+
+      - name: Run full test suite
+        working-directory: /tmp/v026-src
+        run: npm test
+
+      - name: Publish clean v0.2.6 source tree to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin main
+          git checkout -B main origin/main
+          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp -a /tmp/v026-src/. .
+          git add -A
+          git commit -m 'release: v0.2.6'
+          git push origin main
