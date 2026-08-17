@@ -1,0 +1,51 @@
+name: Publish verified v0.2.5
+
+on:
+  push:
+    branches: [chatgpt-v025-publish]
+    paths:
+      - '.v025-final/READY'
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout upload branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Rebuild and verify source archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .v025-final/part-*.b64 > /tmp/v025.b64
+          base64 -d /tmp/v025.b64 > /tmp/v025.zip
+          echo 'fdb2bf0160f81c1dd69b1dd65be47227e30b11b9c8b104f59c9030c930bf1e7d  /tmp/v025.zip' | sha256sum -c -
+          rm -rf /tmp/v025-src
+          mkdir -p /tmp/v025-src
+          unzip -q /tmp/v025.zip -d /tmp/v025-src
+          test -f /tmp/v025-src/sillytavern-card-ide-0.2.5/package.json
+          test "$(node -p "require('/tmp/v025-src/sillytavern-card-ide-0.2.5/package.json').version")" = '0.2.5'
+
+      - name: Run full test suite
+        working-directory: /tmp/v025-src/sillytavern-card-ide-0.2.5
+        run: npm test
+
+      - name: Publish clean source tree to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC=/tmp/v025-src/sillytavern-card-ide-0.2.5
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin main
+          git checkout -B main origin/main
+          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp -a "$SRC"/. .
+          git add -A
+          git commit -m 'release: v0.2.5' || true
+          git push origin main
