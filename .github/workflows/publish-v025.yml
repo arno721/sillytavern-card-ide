@@ -4,7 +4,7 @@ on:
   push:
     branches: [chatgpt-v025-publish]
     paths:
-      - '.v025-final/READY'
+      - '.v025-patch/READY'
 
 permissions:
   contents: write
@@ -18,61 +18,58 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Rebuild staged source from main
+      - name: Rebuild and verify patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .v025-patch/part-*.b64 > /tmp/v025.patch.gz.b64
+          base64 -d /tmp/v025.patch.gz.b64 > /tmp/v025.patch.gz
+          echo 'a618a8fff4cf9d3e31ad438cc8dd7dde2453ecb5a3f737e392bcb106de56f594  /tmp/v025.patch.gz' | sha256sum -c -
+          gzip -dc /tmp/v025.patch.gz > /tmp/v025.patch
+
+      - name: Apply patch to current main
         shell: bash
         run: |
           set -euo pipefail
           git fetch origin main
-          rm -rf /tmp/v025-stage /tmp/v025-src
-          mkdir -p /tmp/v025-stage /tmp/v025-src
-          git archive --format=tar origin/main .v025-import | tar -xf - -C /tmp/v025-stage
-          cat /tmp/v025-stage/.v025-import/part-*.b64 > /tmp/v025.b64
-          base64 -d /tmp/v025.b64 > /tmp/v025.zip
-          unzip -q /tmp/v025.zip -d /tmp/v025-src
-          PKG="$(find /tmp/v025-src -type f -name package.json | head -n 1)"
-          test -n "$PKG"
-          SRC="$(dirname "$PKG")"
-          test "$(node -p "require('$PKG').version")" = '0.2.5'
-          echo "$SRC" > /tmp/v025-root
+          git checkout -B main origin/main
+          git apply --check --binary /tmp/v025.patch
+          git apply --binary /tmp/v025.patch
+          rm -rf .import-parts .upload-v024 .upload-v024b .upload-v024c .upload-v024d .upload-v024z .v025-import
+          test "$(node -p "require('./package.json').version")" = '0.2.5'
 
-      - name: Verify exact source tree
+      - name: Verify exact v0.2.5 source tree
         shell: bash
         run: |
           set -euo pipefail
-          SRC="$(cat /tmp/v025-root)"
-          python3 - "$SRC" <<'PY'
+          python3 - <<'PY'
           from pathlib import Path
-          import hashlib, sys
-          root = Path(sys.argv[1])
-          files = sorted((p for p in root.rglob('*') if p.is_file()), key=lambda p: p.relative_to(root).as_posix())
+          import hashlib
+          root = Path('.')
+          files = sorted(
+              (p for p in root.rglob('*') if p.is_file() and '.git' not in p.parts),
+              key=lambda p: p.as_posix()
+          )
           h = hashlib.sha256()
           for p in files:
-              rel = p.relative_to(root).as_posix().encode()
+              rel = p.as_posix().encode()
               h.update(rel + b'\0' + hashlib.sha256(p.read_bytes()).digest() + b'\n')
           digest = h.hexdigest()
           print(f'files={len(files)} tree_sha256={digest}')
-          assert len(files) == 124, f'unexpected file count: {len(files)}'
-          assert digest == '928c6ae4fab923a479bea78e615e8b3914f0af9f6491879f9cf6d509fe691386', digest
+          assert len(files) == 117, f'unexpected file count: {len(files)}'
+          assert digest == '10e2414aa7cbdcb93cf95772bad9b63276c9e7498b978304ed0629a0115e1779', digest
           PY
 
       - name: Run full test suite
         shell: bash
-        run: |
-          set -euo pipefail
-          cd "$(cat /tmp/v025-root)"
-          npm test
+        run: npm test
 
-      - name: Publish clean v0.2.5 source tree to main
+      - name: Commit and push v0.2.5
         shell: bash
         run: |
           set -euo pipefail
-          SRC="$(cat /tmp/v025-root)"
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git fetch origin main
-          git checkout -B main origin/main
-          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
-          cp -a "$SRC"/. .
           git add -A
           git commit -m 'release: v0.2.5'
           git push origin main
