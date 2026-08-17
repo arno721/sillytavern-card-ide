@@ -1,0 +1,47 @@
+name: Diagnose v0.2.6 chunks v2
+
+on:
+  push:
+    branches: [chatgpt-v026-publish]
+    paths:
+      - '.v026-upload4k/DIAG2'
+
+permissions:
+  contents: write
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Diagnose
+        shell: bash
+        run: |
+          set -euo pipefail
+          missing=''
+          count=0
+          for i in $(seq 0 42); do
+            n=$(printf '%03d' "$i")
+            f=".v026-upload4k/part-${n}.b64"
+            if [ -f "$f" ]; then
+              count=$((count+1))
+            else
+              missing="$missing part-${n}.b64"
+            fi
+          done
+          bytes=0
+          digest='not-complete'
+          if [ "$count" -eq 43 ]; then
+            cat $(find .v026-upload4k -maxdepth 1 -type f -name 'part-*.b64' | sort) > /tmp/v026.b64
+            bytes=$(wc -c < /tmp/v026.b64)
+            base64 -d /tmp/v026.b64 > /tmp/v026.tar.xz
+            digest=$(sha256sum /tmp/v026.tar.xz | awk '{print $1}')
+          fi
+          printf 'count=%s\nmissing=%s\nbase64_bytes=%s\narchive_sha256=%s\n' "$count" "$missing" "$bytes" "$digest" > .v026-upload4k/STATUS2.txt
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .v026-upload4k/STATUS2.txt
+          git commit -m 'chore: record v0.2.6 chunk status v2' || true
+          git push origin HEAD:chatgpt-v026-publish
